@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ENVIRONMENT: ${ENVIRONMENT:-development}
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/dev
+      - DATABASE_TEST_URL=postgres://postgres:postgres@db:5432/test
+    volumes:
+      - '.:/opt/app'
+    command: >
+      sh -c "aerich upgrade
+      && uvicorn app.main:app --reload --workers 1 --host 0.0.0.0 --port 8000"
+    ports:
+      - '8000:8000'
+
+  db:
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+volumes:
+  postgres_data:
